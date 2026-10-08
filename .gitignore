@@ -1,0 +1,20 @@
+# Roam .gitignore
+
+# 测试照片与个人数据 —— 永不入库(含真实 GPS 轨迹,隐私红线)
+data/
+out/
+
+# 中间产物
+*.csv.tmp
+__pycache__/
+*.pyc
+
+# macOS
+.DS_Store
+
+# 后续安卓工程
+*.apk
+*.aab
+.gradle/
+build/
+local.properties
