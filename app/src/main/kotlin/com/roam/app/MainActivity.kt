@@ -2,19 +2,32 @@ package com.roam.app
 
 import android.Manifest
 import android.content.pm.PackageManager
-import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items as gridItems
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -22,21 +35,34 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Tab
+import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.ViewModelProvider
+import coil.compose.AsyncImage
+import coil.request.ImageRequest
+
+// ─────────────────────────── Activity ───────────────────────────
 
 @OptIn(ExperimentalMaterial3Api::class)
 class MainActivity : ComponentActivity() {
@@ -45,42 +71,52 @@ class MainActivity : ComponentActivity() {
 
     private val permLauncher =
         registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { grants ->
-            // 相册或位置任一被拒,都仍尝试扫描(位置缺了退化时间聚类;相册缺了无数据)
             if (grants[Manifest.permission.READ_MEDIA_IMAGES] == true) vm.runScan()
         }
 
     private fun mediaPerms(): Array<String> = buildList {
         add(Manifest.permission.READ_MEDIA_IMAGES)
-        // ACCESS_MEDIA_LOCATION:Android 13+ 与媒体权限捆绑授予(弹窗即合并在相册弹窗内)
         add(Manifest.permission.ACCESS_MEDIA_LOCATION)
     }.toTypedArray()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            MaterialTheme {
-                // 权限进入 Compose 状态:变化即重组
-                var hasPermission by remember {
-                    mutableStateOf(checkMediaPermission())
-                }
-                // 从系统对话框回到前台/授完权,重新校验
-                LaunchedEffect(Unit) { hasPermission = checkMediaPermission() }
+            MaterialTheme(colorScheme = LightColors) {
+                var detail by remember { mutableStateOf<HomeUi.TripCard?>(null) }
                 val ui by vm.ui.collectAsState()
-                Scaffold(topBar = { TopAppBar(title = { Text("Roam") }) }) { padding ->
-                    HomeScreen(
-                        modifier = Modifier.padding(padding),
-                        ui = ui,
-                        hasPermission = hasPermission,
-                        onPermissionGranted = {
-                            hasPermission = true
-                            vm.runScan()
-                        },
-                        onRequestPermission = {
-                            if (checkMediaPermission()) {
+                var hasPermission by remember { mutableStateOf(checkMediaPermission()) }
+                LaunchedEffect(Unit) { hasPermission = checkMediaPermission() }
+
+                val card = detail
+                if (card == null) {
+                    Scaffold(
+                        topBar = {
+                            TopAppBar(
+                                title = { Text("Roam", fontWeight = FontWeight.Bold) },
+                                colors = TopAppBarDefaults.topAppBarColors(
+                                    containerColor = MaterialTheme.colorScheme.surface
+                                ),
+                            )
+                        }
+                    ) { padding ->
+                        HomeScreen(
+                            modifier = Modifier.padding(padding),
+                            ui = ui,
+                            hasPermission = hasPermission,
+                            onPermissionGranted = {
                                 hasPermission = true; vm.runScan()
-                            } else permLauncher.launch(mediaPerms())
-                        },
-                    )
+                            },
+                            onRequestPermission = {
+                                if (checkMediaPermission()) {
+                                    hasPermission = true; vm.runScan()
+                                } else permLauncher.launch(mediaPerms())
+                            },
+                            onOpenTrip = { detail = it },
+                        )
+                    }
+                } else {
+                    TripDetailScreen(card = card, onBack = { detail = null })
                 }
             }
         }
@@ -91,6 +127,24 @@ class MainActivity : ComponentActivity() {
     ) == PackageManager.PERMISSION_GRANTED
 }
 
+// ─────────────────────────── 主题 ───────────────────────────
+
+private val LightColors = androidx.compose.material3.lightColorScheme(
+    primary = Color(0xFF3D5AFE),
+    onPrimary = Color.White,
+    primaryContainer = Color(0xFFE8EAF6),
+    onPrimaryContainer = Color(0xFF1A237E),
+    secondary = Color(0xFF546E7A),
+    surface = Color(0xFFFAFAFA),
+    background = Color(0xFFF4F4F6),
+    surfaceVariant = Color(0xFFECECF0),
+    onSurface = Color(0xFF1C1C21),
+    onSurfaceVariant = Color(0xFF5F5F68),
+    outlineVariant = Color(0xFFDDDE4),
+)
+
+// ─────────────────────────── 首页 ───────────────────────────
+
 @Composable
 fun HomeScreen(
     modifier: Modifier = Modifier,
@@ -98,12 +152,12 @@ fun HomeScreen(
     hasPermission: Boolean,
     onPermissionGranted: () -> Unit,
     onRequestPermission: () -> Unit,
+    onOpenTrip: (HomeUi.TripCard) -> Unit,
 ) {
     when {
-        !hasPermission -> Onboarding(onRequestPermission)
+        !hasPermission -> Onboarding(onRequestPermission, modifier)
         ui.state == HomeUi.State.SCANNING -> Scanning(modifier)
-        ui.state == HomeUi.State.DONE -> Result(ui, modifier)
-        // 已授权但还没开始扫(比如进程重建):自动触发
+        ui.state == HomeUi.State.DONE -> ResultList(ui, onOpenTrip, modifier)
         else -> Box(modifier.fillMaxSize()) { LaunchedEffect(Unit) { onPermissionGranted() } }
     }
 }
@@ -111,76 +165,249 @@ fun HomeScreen(
 @Composable
 private fun Scanning(modifier: Modifier = Modifier) {
     Column(
-        modifier.fillMaxSize().padding(24.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+        modifier.fillMaxSize().padding(32.dp),
+        verticalArrangement = Arrangement.spacedBy(20.dp, Alignment.CenterVertically),
+        horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        CircularProgressIndicator()
+        CircularProgressIndicator(Modifier.size(44.dp))
         Text("正在扫描你的回忆…", style = MaterialTheme.typography.titleMedium)
-        Text("只读取时间与位置信息,不上传", style = MaterialTheme.typography.bodySmall)
-    }
-}
-
-@Composable
-private fun Onboarding(request: () -> Unit) {
-    Column(
-        Modifier.fillMaxSize().padding(24.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
-    ) {
         Text(
-            "你的回忆,早已在手机里。",
-            style = MaterialTheme.typography.headlineSmall,
-            fontWeight = FontWeight.Bold,
+            "只读取时间与位置信息,不上传",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
-        Text("Roam 只读取照片的时间和位置信息,不上传、不看内容,自动发现你走过的旅行。")
-        Button(onClick = request) { Text("授权照片访问") }
     }
 }
 
 @Composable
-private fun Result(ui: HomeUi, modifier: Modifier = Modifier) {
+private fun Onboarding(request: () -> Unit, modifier: Modifier = Modifier) {
+    Column(
+        modifier.fillMaxSize().padding(28.dp),
+        verticalArrangement = Arrangement.spacedBy(18.dp),
+    ) {
+        Spacer(Modifier.height(48.dp))
+        Text("你的回忆,", fontSize = 34.sp, fontWeight = FontWeight.Bold)
+        Text("早已在手机里。", fontSize = 34.sp, fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.primary)
+        Spacer(Modifier.height(8.dp))
+        Text(
+            "Roam 只读取照片的时间和位置信息,\n不上传、不看内容,自动整理你走过的旅行。",
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Spacer(Modifier.height(20.dp))
+        Button(onClick = request, modifier = Modifier.fillMaxWidth().height(52.dp)) {
+            Text("授权照片访问", fontSize = 17.sp)
+        }
+    }
+}
+
+@Composable
+private fun ResultList(
+    ui: HomeUi,
+    onOpenTrip: (HomeUi.TripCard) -> Unit,
+    modifier: Modifier = Modifier,
+) {
     LazyColumn(
-        modifier.fillMaxSize().padding(horizontal = 16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
+        modifier.fillMaxSize(),
+        contentPadding = androidx.compose.foundation.layout.PaddingValues(
+            start = 20.dp, end = 20.dp, top = 12.dp, bottom = 32.dp
+        ),
+        verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
         item {
             Text(
-                if (ui.trips.isEmpty()) "还没有发现旅行。"
-                else "发现了 ${ui.trips.size} 次旅行。",
-                style = MaterialTheme.typography.headlineSmall,
+                if (ui.trips.isEmpty()) "还没有发现旅行"
+                else "发现了 ${ui.trips.size} 次旅行",
+                fontSize = 26.sp,
                 fontWeight = FontWeight.Bold,
             )
             Text(
-                "${ui.validCount} 张正片 · 带 GPS ${ui.gpsCount} 张 · 待确认 ${ui.possibles.size} 个" + if (ui.homeKnown) " · 已识别常住地" else " · 常住地未识别",
+                "${ui.validCount} 张正片 · 带 GPS ${ui.gpsCount} 张" +
+                    if (ui.homeKnown) " · 已识别常住地" else "",
                 style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
+            Spacer(Modifier.height(6.dp))
         }
-        items(ui.trips, key = { it.id }) { t ->
-            Card(
-                Modifier.fillMaxWidth(),
-                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-            ) {
-                Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Text(t.subtitle, style = MaterialTheme.typography.bodyMedium)
-                    Text("${t.shots} 张照片 · 置信度 ${t.confidence}%", style = MaterialTheme.typography.bodySmall)
-                }
-            }
-        }
+
+        items(ui.trips, key = { it.id }) { t -> TripCardRow(t, onOpenTrip) }
+
         if (ui.possibles.isNotEmpty()) {
             item {
+                Spacer(Modifier.height(10.dp))
                 Text(
                     "可能是旅行(${ui.possibles.size})",
-                    style = MaterialTheme.typography.titleSmall,
-                    modifier = Modifier.padding(top = 8.dp),
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
-            items(ui.possibles, key = { p -> "p" + p.title }) { p ->
-                TextButton(onClick = {}) {
-                    Column {
-                        Text(p.title, style = MaterialTheme.typography.bodyMedium)
-                        Text(p.subtitle, style = MaterialTheme.typography.bodySmall)
-                    }
-                }
+            items(ui.possibles, key = { "p" + it.title }) { p ->
+                PossibleRow(p)
             }
         }
     }
+}
+
+@Composable
+private fun TripCardRow(t: HomeUi.TripCard, onOpen: (HomeUi.TripCard) -> Unit) {
+    Card(
+        Modifier.fillMaxWidth().clickable { onOpen(t) },
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+    ) {
+        Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(Modifier.size(10.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primary))
+                Spacer(Modifier.size(10.dp))
+                Text(t.city, fontSize = 24.sp, fontWeight = FontWeight.Bold)
+                if (t.province.isNotBlank()) {
+                    Spacer(Modifier.size(8.dp))
+                    Text(t.province, style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            }
+            Text(t.subtitle, style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Row(Modifier.padding(top = 4.dp), horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+                Text("${t.days} 天", style = MaterialTheme.typography.bodySmall)
+                Text("${t.shots} 张照片", style = MaterialTheme.typography.bodySmall)
+                t.awayKm?.let { Text("距家 $it 公里", style = MaterialTheme.typography.bodySmall) }
+            }
+        }
+    }
+}
+
+@Composable
+private fun PossibleRow(p: HomeUi.PossibleCard) {
+    Surface(
+        Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(14.dp),
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f),
+    ) {
+        Column(Modifier.padding(horizontal = 16.dp, vertical = 10.dp)) {
+            Text(p.title, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
+            Text(p.subtitle, style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+    }
+}
+
+// ─────────────────────────── Trip 详情 ───────────────────────────
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun TripDetailScreen(card: HomeUi.TripCard, onBack: () -> Unit) {
+    var tab by remember { mutableIntStateOf(0) }
+    val titles = listOf("时间线", "照片", "地图")
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                navigationIcon = {
+                    androidx.compose.material3.TextButton(onClick = onBack) {
+                        Text("← 返回")
+                    }
+                },
+                title = { Column {
+                    Text("${card.city} · ${card.province}", fontWeight = FontWeight.Bold)
+                    Text(card.subtitle, style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant)
+                } },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.surface
+                ),
+            )
+        },
+    ) { padding ->
+        Column(Modifier.padding(padding)) {
+            TabRow(selectedTabIndex = tab) {
+                titles.forEachIndexed { i, t ->
+                    Tab(selected = tab == i, onClick = { tab = i },
+                        text = { Text(t.replace(" ", "")) })
+                }
+            }
+            when (tab) {
+                0 -> TimelineTab(card)
+                1 -> PhotosTab(card)
+                else -> MapPlaceholder(card)
+            }
+        }
+    }
+}
+
+@Composable
+private fun TimelineTab(card: HomeUi.TripCard) {
+    LazyColumn(
+        Modifier.fillMaxSize(),
+        contentPadding = androidx.compose.foundation.layout.PaddingValues(
+            start = 20.dp, end = 20.dp, top = 18.dp, bottom = 32.dp
+        ),
+        verticalArrangement = Arrangement.spacedBy(18.dp),
+    ) {
+        items(card.sections, key = { it.date }) { s ->
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Text(s.date, fontSize = 19.sp, fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary)
+                if (s.photoIds.isNotEmpty()) {
+                    LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        items(s.photoIds, key = { it }) { id ->
+                            Thumb(id, 132.dp)
+                        }
+                    }
+                }
+                Text("共 ${s.times.size} 张 · ${s.times.firstOrNull() ?: ""} — ${s.times.lastOrNull() ?: ""}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+        }
+    }
+}
+
+@Composable
+private fun PhotosTab(card: HomeUi.TripCard) {
+    LazyVerticalGrid(
+        columns = GridCells.Fixed(3),
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = androidx.compose.foundation.layout.PaddingValues(2.dp),
+        horizontalArrangement = Arrangement.spacedBy(2.dp),
+        verticalArrangement = Arrangement.spacedBy(2.dp),
+    ) {
+        gridItems(card.photoIds, key = { it }) { id -> Thumb(id) }
+    }
+}
+
+@Composable
+private fun MapPlaceholder(card: HomeUi.TripCard) {
+    Column(
+        Modifier.fillMaxSize().padding(32.dp),
+        verticalArrangement = Arrangement.spacedBy(14.dp, Alignment.CenterVertically),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Text("🗺️", fontSize = 52.sp)
+        Text("地图在路上", fontSize = 19.sp, fontWeight = FontWeight.Bold)
+        Text(
+            "下一版接入高德地图 SDK\n(需要申请开发者 Key)",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
+/** 缩略图:Coil 直接加载 MediaStore uri(系统缩略管线,非原图) */
+@Composable
+private fun Thumb(id: Long, size: androidx.compose.ui.unit.Dp? = null) {
+    val m = Modifier
+        .then(if (size != null) Modifier.size(size, size * 1.2f) else Modifier.fillMaxWidth().aspectRatio(1f))
+        .clip(RoundedCornerShape(10.dp))
+    AsyncImage(
+        model = ImageRequest.Builder(androidx.compose.ui.platform.LocalContext.current)
+            .data(photoUri(id))
+            .crossfade(true)
+            .size(360)
+            .build(),
+        contentDescription = null,
+        contentScale = ContentScale.Crop,
+        modifier = m,
+    )
 }

@@ -54,6 +54,9 @@ dependencies {
     // EXIF 直读(GPS/拍摄时间;不依赖系统相册是否解析)
     implementation("androidx.exifinterface:exifinterface:1.4.1")
 
+    // 图片加载(MediaStore 缩略图)
+    implementation("io.coil-kt:coil-compose:2.7.0")
+
     testImplementation(libs.junit)
 }
 
