@@ -7,6 +7,17 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -52,6 +63,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
@@ -89,34 +103,50 @@ class MainActivity : ComponentActivity() {
                 LaunchedEffect(Unit) { hasPermission = checkMediaPermission() }
 
                 val card = detail
-                if (card == null) {
-                    Scaffold(
-                        topBar = {
-                            TopAppBar(
-                                title = { Text("Roam", fontWeight = FontWeight.Bold) },
-                                colors = TopAppBarDefaults.topAppBarColors(
-                                    containerColor = MaterialTheme.colorScheme.surface
-                                ),
+                Box(Modifier.fillMaxSize().background(RoamVisuals.pageBg())) {
+                    // 首页:滑动+淡入出现,缩放淡出退场
+                    androidx.compose.animation.AnimatedVisibility(
+                        visible = card == null,
+                        enter = fadeIn(tween(260)) + slideInVertically(tween(280)) { it / 14 },
+                        exit = fadeOut(tween(180)),
+                    ) {
+                        Scaffold(
+                            topBar = {
+                                TopAppBar(
+                                    title = { Text("Roam", fontWeight = FontWeight.Bold) },
+                                    colors = TopAppBarDefaults.topAppBarColors(
+                                        containerColor = androidx.compose.ui.graphics.Color.Transparent
+                                    ),
+                                )
+                            }
+                        ) { padding ->
+                            HomeScreen(
+                                modifier = Modifier.padding(padding),
+                                ui = ui,
+                                hasPermission = hasPermission,
+                                onPermissionGranted = {
+                                    hasPermission = true; vm.runScan()
+                                },
+                                onRequestPermission = {
+                                    if (checkMediaPermission()) {
+                                        hasPermission = true; vm.runScan()
+                                    } else permLauncher.launch(mediaPerms())
+                                },
+                                onOpenTrip = { detail = it },
                             )
                         }
-                    ) { padding ->
-                        HomeScreen(
-                            modifier = Modifier.padding(padding),
-                            ui = ui,
-                            hasPermission = hasPermission,
-                            onPermissionGranted = {
-                                hasPermission = true; vm.runScan()
-                            },
-                            onRequestPermission = {
-                                if (checkMediaPermission()) {
-                                    hasPermission = true; vm.runScan()
-                                } else permLauncher.launch(mediaPerms())
-                            },
-                            onOpenTrip = { detail = it },
-                        )
                     }
-                } else {
-                    TripDetailScreen(card = card, onBack = { detail = null })
+                    // 详情页:缩放入场(模拟"从卡片里长出来")
+                    androidx.compose.animation.AnimatedVisibility(
+                        visible = card != null,
+                        enter = fadeIn(tween(240)) + scaleIn(
+                            initialScale = 0.94f,
+                            animationSpec = spring(stiffness = 380f)
+                        ),
+                        exit = scaleOut(targetScale = 0.96f) + fadeOut(tween(160)),
+                    ) {
+                        detail?.let { c -> TripDetailScreen(card = c, onBack = { detail = null }) }
+                    }
                 }
             }
         }
@@ -130,15 +160,15 @@ class MainActivity : ComponentActivity() {
 // ─────────────────────────── 主题 ───────────────────────────
 
 private val LightColors = androidx.compose.material3.lightColorScheme(
-    primary = Color(0xFF3D5AFE),
+    primary = RoamVisuals.Dusk,
     onPrimary = Color.White,
     primaryContainer = Color(0xFFE8EAF6),
-    onPrimaryContainer = Color(0xFF1A237E),
+    onPrimaryContainer = RoamVisuals.Ink,
     secondary = Color(0xFF546E7A),
-    surface = Color(0xFFFAFAFA),
-    background = Color(0xFFF4F4F6),
+    surface = Color(0xFFFFFFFF),
+    background = Color(0xFFF7F9FF),
     surfaceVariant = Color(0xFFECECF0),
-    onSurface = Color(0xFF1C1C21),
+    onSurface = RoamVisuals.Ink,
     onSurfaceVariant = Color(0xFF5F5F68),
     outlineVariant = Color(0xFFDDDE4),
 )
@@ -166,11 +196,18 @@ fun HomeScreen(
 private fun Scanning(modifier: Modifier = Modifier) {
     Column(
         modifier.fillMaxSize().padding(32.dp),
-        verticalArrangement = Arrangement.spacedBy(20.dp, Alignment.CenterVertically),
+        verticalArrangement = Arrangement.spacedBy(22.dp, Alignment.CenterVertically),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        CircularProgressIndicator(Modifier.size(44.dp))
-        Text("正在扫描你的回忆…", style = MaterialTheme.typography.titleMedium)
+        Box(Modifier.pulse(), contentAlignment = Alignment.Center) {
+            Box(
+                Modifier.size(86.dp).clip(CircleShape)
+                    .background(Brush.linearGradient(listOf(RoamVisuals.Dawn, RoamVisuals.Dusk)))
+            )
+            Text("🧭", fontSize = 36.sp)
+        }
+        Text("正在扫描你的回忆…",
+            style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
         Text(
             "只读取时间与位置信息,不上传",
             style = MaterialTheme.typography.bodySmall,
@@ -185,20 +222,37 @@ private fun Onboarding(request: () -> Unit, modifier: Modifier = Modifier) {
         modifier.fillMaxSize().padding(28.dp),
         verticalArrangement = Arrangement.spacedBy(18.dp),
     ) {
-        Spacer(Modifier.height(48.dp))
-        Text("你的回忆,", fontSize = 34.sp, fontWeight = FontWeight.Bold)
-        Text("早已在手机里。", fontSize = 34.sp, fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.primary)
-        Spacer(Modifier.height(8.dp))
+        Spacer(Modifier.height(56.dp))
+        Box(
+            Modifier.size(64.dp).clip(RoundedCornerShape(20.dp))
+                .background(Brush.linearGradient(listOf(RoamVisuals.Dawn, RoamVisuals.Dusk))),
+            contentAlignment = Alignment.Center,
+        ) { Text("🧭", fontSize = 30.sp) }
+        Spacer(Modifier.height(6.dp))
+        Text("你的回忆,", fontSize = 38.sp, fontWeight = FontWeight.Bold, color = RoamVisuals.Ink)
+        Text(
+            "早已在手机里。",
+            fontSize = 38.sp, fontWeight = FontWeight.Bold,
+            color = RoamVisuals.Dusk,
+        )
+        Spacer(Modifier.height(10.dp))
         Text(
             "Roam 只读取照片的时间和位置信息,\n不上传、不看内容,自动整理你走过的旅行。",
             style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            color = MaterialTheme.colorScheme.onSurfaceVariant, lineHeight = 26.sp,
         )
-        Spacer(Modifier.height(20.dp))
-        Button(onClick = request, modifier = Modifier.fillMaxWidth().height(52.dp)) {
-            Text("授权照片访问", fontSize = 17.sp)
+        Spacer(Modifier.weight(1f))
+        Button(
+            onClick = request,
+            modifier = Modifier.fillMaxWidth().height(54.dp),
+            shape = RoundedCornerShape(16.dp),
+            colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+                containerColor = RoamVisuals.Dusk
+            ),
+        ) {
+            Text("授权照片访问", fontSize = 17.sp, fontWeight = FontWeight.Bold)
         }
+        Spacer(Modifier.height(30.dp))
     }
 }
 
@@ -231,7 +285,10 @@ private fun ResultList(
             Spacer(Modifier.height(6.dp))
         }
 
-        items(ui.trips, key = { it.id }) { t -> TripCardRow(t, onOpenTrip) }
+        val tripList = ui.trips
+        items(tripList.size, key = { tripList[it].id }) { i ->
+            Box(Modifier.animateItemIn(i)) { TripCardRow(tripList[i], onOpenTrip) }
+        }
 
         if (ui.possibles.isNotEmpty()) {
             item {
@@ -251,31 +308,67 @@ private fun ResultList(
 
 @Composable
 private fun TripCardRow(t: HomeUi.TripCard, onOpen: (HomeUi.TripCard) -> Unit) {
+    val pressed = remember { mutableStateOf(false) }
+    val scale by animateFloatAsState(
+        if (pressed.value) 0.97f else 1f,
+        spring(stiffness = 400f), label = "cs"
+    )
     Card(
-        Modifier.fillMaxWidth().clickable { onOpen(t) },
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        Modifier.fillMaxWidth()
+            .graphicsLayer { scaleX = scale; scaleY = scale }
+            .clickable { onOpen(t) },
+        shape = RoundedCornerShape(24.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 3.dp),
     ) {
-        Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(Modifier.size(10.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primary))
-                Spacer(Modifier.size(10.dp))
-                Text(t.city, fontSize = 24.sp, fontWeight = FontWeight.Bold)
-                if (t.province.isNotBlank()) {
-                    Spacer(Modifier.size(8.dp))
-                    Text(t.province, style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant)
-                }
+        Box {
+            // 头图:该 Trip 的第一张照片(无则渐变座)
+            if (t.photoIds.isNotEmpty()) {
+                AsyncImage(
+                    model = ImageRequest.Builder(androidx.compose.ui.platform.LocalContext.current)
+                        .data(photoUri(t.photoIds.first()))
+                        .crossfade(true).size(720).build(),
+                    contentDescription = null,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxWidth().height(180.dp),
+                )
+            } else {
+                Box(
+                    Modifier.fillMaxWidth().height(180.dp)
+                        .background(Brush.linearGradient(listOf(RoamVisuals.Dawn, RoamVisuals.Dusk)))
+                )
             }
-            Text(t.subtitle, style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant)
-            Row(Modifier.padding(top = 4.dp), horizontalArrangement = Arrangement.spacedBy(14.dp)) {
-                Text("${t.days} 天", style = MaterialTheme.typography.bodySmall)
-                Text("${t.shots} 张照片", style = MaterialTheme.typography.bodySmall)
-                t.awayKm?.let { Text("距家 $it 公里", style = MaterialTheme.typography.bodySmall) }
+            // 底部渐变遮罩 + 海报字
+            Box(Modifier.matchParentSize().background(RoamVisuals.heroScrims()))
+            Column(Modifier.align(Alignment.BottomStart).padding(20.dp)) {
+                Row(verticalAlignment = Alignment.Bottom) {
+                    Text(t.city, fontSize = 32.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                    if (t.province.isNotBlank()) {
+                        Spacer(Modifier.size(6.dp))
+                        Text(" ${t.province}", fontSize = 18.sp,
+                            color = Color(0xFFD5DDFF))
+                    }
+                }
+                Text(t.subtitle, style = MaterialTheme.typography.bodyLarge, color = Color(0xFFE6EAFF))
+            }
+            // 统计胶囊
+            Row(
+                Modifier.align(Alignment.TopEnd).padding(14.dp),
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+            ) {
+                Pill("${t.days} 天")
+                Pill("${t.shots} 张")
             }
         }
+    }
+}
+
+@Composable
+private fun Pill(text: String) {
+    Box(
+        Modifier.clip(RoundedCornerShape(999.dp))
+            .background(Color(0x4D121B44)).padding(horizontal = 12.dp, vertical = 6.dp)
+    ) {
+        Text(text, color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Medium)
     }
 }
 
