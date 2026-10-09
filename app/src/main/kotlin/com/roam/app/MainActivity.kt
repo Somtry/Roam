@@ -290,34 +290,56 @@ private fun HeroHeader(ui: HomeUi) {
             .fillMaxWidth()
             .statusBarHeight()
             .background(
-                Brush.verticalGradient(listOf(RoamVisuals.Dusk, RoamVisuals.Dawn))
+                Brush.verticalGradient(listOf(Color(0xFF2A3199), Color(0xFF4C63E6)))
             )
-            .padding(start = 24.dp, end = 24.dp, top = 26.dp, bottom = 30.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
+            .padding(start = 26.dp, end = 26.dp, top = 22.dp, bottom = 34.dp),
+        verticalArrangement = Arrangement.spacedBy(6.dp),
     ) {
+        // 品牌行:一枚圆角方形 R 徽标 + 细体登记名(轻声,不抢戏)
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text("🧭", fontSize = 20.sp)
-            Spacer(Modifier.size(8.dp))
+            Box(
+                Modifier.size(24.dp).clip(RoundedCornerShape(8.dp))
+                    .background(Color(0x33FFFFFF)),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text("R", color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+            }
+            Spacer(Modifier.size(9.dp))
             Text(
                 "Roam",
-                color = Color(0xCCFFFFFF),
-                fontWeight = FontWeight.Bold,
-                fontSize = 15.sp,
-                letterSpacing = 2.sp,
+                color = Color(0x99FFFFFF),
+                fontWeight = FontWeight.Normal,
+                fontSize = 13.sp,
+                letterSpacing = 3.sp,
             )
         }
-        Text(
-            if (ui.trips.isEmpty()) "还没有发现旅行"
-            else "发现了 ${ui.trips.size} 次旅行",
-            fontSize = 30.sp,
-            fontWeight = FontWeight.Bold,
-            color = Color.White,
-        )
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            HeroChip("${ui.validCount} 张正片")
-            HeroChip("${ui.gpsCount} 张带GPS")
-            if (ui.homeKnown) HeroChip("已识别常住地")
+        Spacer(Modifier.height(14.dp))
+        // 主句:细字引导 + 数字重音(数字才是主角,句子是配角)
+        Row(verticalAlignment = Alignment.Bottom) {
+            Text(
+                if (ui.trips.isEmpty()) "回忆还在整理" else "走过了",
+                fontSize = 20.sp, fontWeight = FontWeight.Normal,
+                color = Color(0xB3FFFFFF),
+            )
+            if (ui.trips.isNotEmpty()) {
+                Spacer(Modifier.size(6.dp))
+                Text(
+                    "${ui.trips.size}", fontSize = 34.sp, fontWeight = FontWeight.Bold,
+                    color = Color.White,
+                )
+                Spacer(Modifier.size(6.dp))
+                Text(
+                    "段旅程", fontSize = 20.sp, fontWeight = FontWeight.Normal,
+                    color = Color(0xB3FFFFFF),
+                )
+            }
         }
+        Spacer(Modifier.height(2.dp))
+        // 统计:一行细字,不再胶囊堆叠
+        Text(
+            "${ui.validCount} 张照片 · ${ui.gpsCount} 张带位置" + if (ui.homeKnown) " · 常住地已识别" else "",
+            color = Color(0x80FFFFFF), fontSize = 13.sp,
+        )
     }
 }
 
