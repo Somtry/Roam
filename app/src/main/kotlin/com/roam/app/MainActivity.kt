@@ -110,31 +110,20 @@ class MainActivity : ComponentActivity() {
                         enter = fadeIn(tween(260)) + slideInVertically(tween(280)) { it / 14 },
                         exit = fadeOut(tween(180)),
                     ) {
-                        Scaffold(
-                            topBar = {
-                                TopAppBar(
-                                    title = { Text("Roam", fontWeight = FontWeight.Bold) },
-                                    colors = TopAppBarDefaults.topAppBarColors(
-                                        containerColor = androidx.compose.ui.graphics.Color.Transparent
-                                    ),
-                                )
-                            }
-                        ) { padding ->
-                            HomeScreen(
-                                modifier = Modifier.padding(padding),
-                                ui = ui,
-                                hasPermission = hasPermission,
-                                onPermissionGranted = {
+                        HomeScreen(
+                            modifier = Modifier,
+                            ui = ui,
+                            hasPermission = hasPermission,
+                            onPermissionGranted = {
+                                hasPermission = true; vm.runScan()
+                            },
+                            onRequestPermission = {
+                                if (checkMediaPermission()) {
                                     hasPermission = true; vm.runScan()
-                                },
-                                onRequestPermission = {
-                                    if (checkMediaPermission()) {
-                                        hasPermission = true; vm.runScan()
-                                    } else permLauncher.launch(mediaPerms())
-                                },
-                                onOpenTrip = { detail = it },
-                            )
-                        }
+                                } else permLauncher.launch(mediaPerms())
+                            },
+                            onOpenTrip = { detail = it },
+                        )
                     }
                     // 详情页:缩放入场(模拟"从卡片里长出来")
                     androidx.compose.animation.AnimatedVisibility(
@@ -222,7 +211,7 @@ private fun Onboarding(request: () -> Unit, modifier: Modifier = Modifier) {
         modifier.fillMaxSize().padding(28.dp),
         verticalArrangement = Arrangement.spacedBy(18.dp),
     ) {
-        Spacer(Modifier.height(56.dp))
+        Spacer(Modifier.statusBarHeight())
         Box(
             Modifier.size(64.dp).clip(RoundedCornerShape(20.dp))
                 .background(Brush.linearGradient(listOf(RoamVisuals.Dawn, RoamVisuals.Dusk))),
@@ -269,21 +258,7 @@ private fun ResultList(
         ),
         verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
-        item {
-            Text(
-                if (ui.trips.isEmpty()) "还没有发现旅行"
-                else "发现了 ${ui.trips.size} 次旅行",
-                fontSize = 26.sp,
-                fontWeight = FontWeight.Bold,
-            )
-            Text(
-                "${ui.validCount} 张正片 · 带 GPS ${ui.gpsCount} 张" +
-                    if (ui.homeKnown) " · 已识别常住地" else "",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            Spacer(Modifier.height(6.dp))
-        }
+        item { HeroHeader(ui) }
 
         val tripList = ui.trips
         items(tripList.size, key = { tripList[it].id }) { i ->
@@ -297,6 +272,7 @@ private fun ResultList(
                     "可能是旅行(${ui.possibles.size})",
                     style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontWeight = FontWeight.Medium,
                 )
             }
             items(ui.possibles, key = { "p" + it.title }) { p ->
@@ -304,6 +280,64 @@ private fun ResultList(
             }
         }
     }
+}
+
+/** 沉浸式头部:深靛渐变横幅,问候语+主结果+白色统计胶囊;卡片列表叠在其下 */
+@Composable
+private fun HeroHeader(ui: HomeUi) {
+    Column(
+        Modifier
+            .fillMaxWidth()
+            .statusBarHeight()
+            .background(
+                Brush.verticalGradient(listOf(RoamVisuals.Dusk, RoamVisuals.Dawn))
+            )
+            .padding(start = 24.dp, end = 24.dp, top = 26.dp, bottom = 30.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text("🧭", fontSize = 20.sp)
+            Spacer(Modifier.size(8.dp))
+            Text(
+                "Roam",
+                color = Color(0xCCFFFFFF),
+                fontWeight = FontWeight.Bold,
+                fontSize = 15.sp,
+                letterSpacing = 2.sp,
+            )
+        }
+        Text(
+            if (ui.trips.isEmpty()) "还没有发现旅行"
+            else "发现了 ${ui.trips.size} 次旅行",
+            fontSize = 30.sp,
+            fontWeight = FontWeight.Bold,
+            color = Color.White,
+        )
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            HeroChip("${ui.validCount} 张正片")
+            HeroChip("${ui.gpsCount} 张带GPS")
+            if (ui.homeKnown) HeroChip("已识别常住地")
+        }
+    }
+}
+
+@Composable
+private fun HeroChip(text: String) {
+    Box(
+        Modifier.clip(RoundedCornerShape(999.dp))
+            .background(Color(0x26FFFFFF)).padding(horizontal = 12.dp, vertical = 5.dp)
+    ) {
+        Text(text, color = Color(0xE6FFFFFF), fontSize = 12.sp, fontWeight = FontWeight.Medium)
+    }
+}
+
+@Composable
+private fun Modifier.statusBarHeight(): Modifier {
+    val res = androidx.compose.ui.platform.LocalContext.current.resources
+    val id = res.getIdentifier("status_bar_height", "dimen", "android")
+    val h = if (id > 0) res.getDimensionPixelSize(id) else 0
+    val d = androidx.compose.ui.platform.LocalDensity.current
+    return this.then(Modifier.padding(top = with(d) { h.toDp() }))
 }
 
 @Composable
