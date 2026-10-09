@@ -170,20 +170,17 @@ private fun RoamApp(
             }
         }
 
-        // 底部导航
-        Surface(
-            Modifier.align(Alignment.BottomCenter).fillMaxWidth(),
-            shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
-            color = Color.White,
-            shadowElevation = 18.dp,
-        ) {
-            Row(
-                Modifier.navigationBarsPadding().height(74.dp).padding(horizontal = 8.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                BottomItem("✈", "旅行", tab == 0, Modifier.weight(1f)) { tab = 0 }
-                BottomItem("◎", "地图", tab == 1, Modifier.weight(1f)) { tab = 1 }
-                BottomItem("☰", "我的", tab == 2, Modifier.weight(1f)) { tab = 2 }
+        // 底部导航:悬浮毛玻璃胶囊(不铺满,左右 26dp 边距)
+        Box(Modifier.align(Alignment.BottomCenter).navigationBarsPadding().padding(bottom = 14.dp)) {
+            FrostedBar(Modifier.padding(horizontal = 26.dp)) {
+                Row(
+                    Modifier.height(62.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    BottomItem("✈", "旅行", tab == 0, Modifier.weight(1f)) { tab = 0 }
+                    BottomItem("◎", "地图", tab == 1, Modifier.weight(1f)) { tab = 1 }
+                    BottomItem("☰", "我的", tab == 2, Modifier.weight(1f)) { tab = 2 }
+                }
             }
         }
 
