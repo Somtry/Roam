@@ -382,9 +382,17 @@ private fun MaybeCardRow(p: HomeUi.PossibleCard) {
             }
             Box(Modifier.matchParentSize().background(
                 Brush.verticalGradient(
-                    0f to Color(0x00101830), 0.5f to Color(0x30121840), 1f to Color(0x6B121B44)
+                    0f to Color(0x00101830), 0.4f to Color(0x26121840), 1f to Color(0x73121B44)
                 )
             ))
+            // 左下角张数:纯文字压遮罩,无底条(遮罩渐变保证可读)
+            Text(
+                p.subtitle,
+                Modifier.align(Alignment.BottomStart).padding(start = 14.dp, bottom = 10.dp),
+                fontSize = 12.sp,
+                color = Color(0xE6FFFFFF),
+                fontWeight = FontWeight.Medium,
+            )
             Box(
                 Modifier.align(Alignment.TopEnd).padding(12.dp)
                     .clip(RoundedCornerShape(999.dp))
