@@ -174,7 +174,7 @@ private fun RoamApp(
         Box(Modifier.align(Alignment.BottomCenter).navigationBarsPadding().padding(bottom = 14.dp)) {
             FrostedBar(Modifier.padding(horizontal = 26.dp)) {
                 Row(
-                    Modifier.height(62.dp),
+                    Modifier.padding(vertical = 9.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     BottomItem("✈", "旅行", tab == 0, Modifier.weight(1f)) { tab = 0 }
@@ -201,14 +201,37 @@ private fun RoamApp(
 private fun BottomItem(
     icon: String, label: String, selected: Boolean, modifier: Modifier, onClick: () -> Unit,
 ) {
-    val tint = if (selected) Palette.Dusk else Color(0xFFB0B0BC)
+    // 选中态动画:图标整体 弹簧缩放+上浮,文字从半透明入
+    val iconScale by animateFloatAsState(
+        if (selected) 1.12f else 1f,
+        spring(dampingRatio = androidx.compose.animation.core.Spring.DampingRatioMediumBouncy, stiffness = 480f),
+        label = "is",
+    )
+    val iconLift by animateFloatAsState(
+        if (selected) -3f else 0f, tween(240), label = "il",
+    )
+    val labelAlpha by animateFloatAsState(
+        if (selected) 1f else 0.55f, tween(240), label = "la",
+    )
+    val tint = if (selected) Palette.Dusk else Color(0xFFA6A6B4)
     Column(
-        modifier.clickable(onClick = onClick).padding(vertical = 10.dp),
+        modifier.clickable(onClick = onClick)
+            .graphicsLayer { iconScale.also { } }
+            .padding(vertical = 8.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(3.dp),
+        verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
-        Text(icon, fontSize = 21.sp, color = tint)
-        Text(label, fontSize = 11.sp, fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal, color = tint)
+        Text(
+            icon, fontSize = 20.sp, color = tint,
+            modifier = Modifier.graphicsLayer {
+                scaleX = iconScale; scaleY = iconScale; translationY = iconLift
+            },
+        )
+        Text(
+            label, fontSize = 11.sp,
+            fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
+            color = tint, modifier = Modifier.graphicsLayer { alpha = labelAlpha },
+        )
     }
 }
 

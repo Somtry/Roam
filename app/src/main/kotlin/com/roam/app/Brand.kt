@@ -73,8 +73,8 @@ fun RoamLogo(
 
 /**
  * 毛玻璃悬浮容器(iOS 风玻璃胶囊):
- * 半透明白(72%)+ 上深下浅内部渐变(玻璃厚度感)+ 顶部边缘 1px 高亮(高光棱)。
- * 内容滚到底栏后隐约可见,形成"透"的错觉(等效毛玻璃,免快照开销)。
+ * 内部白度压低(顶 74% → 底 62% 泛冷光)塑"透";1px 白描边是高光棱;
+ * 阴影 12dp 冷调轻托(不压秤)。高度不封顶(由内容自然撑起,文字不被裁)。
  */
 @Composable
 fun FrostedBar(
@@ -84,14 +84,14 @@ fun FrostedBar(
     val shape = RoundedCornerShape(26.dp)
     Box(
         modifier
+            .shadow(12.dp, shape, ambientColor = Color(0x148A8FB8), spotColor = Color(0x24808CC0))
             .clip(shape)
-            .border(1.dp, Color(0x99FFFFFF), shape)
-            .shadow(20.dp, shape, ambientColor = Color(0x228A8FB8), spotColor = Color(0x33808CC0))
+            .border(1.dp, Color(0x73FFFFFF), shape)
             .background(
                 androidx.compose.ui.graphics.Brush.verticalGradient(
-                    0f to Color(0xEBFFFFFF),      // 顶厚
-                    0.55f to Color(0xD9FFFFFF),
-                    1f to Color(0xCCFAFBFF),      // 底薄泛蓝光
+                    0f to Color(0xBDFFFFFF),
+                    0.6f to Color(0xA8FFFFFF),
+                    1f to Color(0x9EFAFCFF),
                 )
             )
     ) {
