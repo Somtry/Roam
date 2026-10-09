@@ -285,71 +285,59 @@ private fun ResultList(
 /** 沉浸式头部:深靛渐变横幅,问候语+主结果+白色统计胶囊;卡片列表叠在其下 */
 @Composable
 private fun HeroHeader(ui: HomeUi) {
+    // 天幕一体:Hero 不再是独立色块,而是从页面天幕自然长出——
+    // 上半段加深靛(与底色同相渐变),下端用大圆角切割出"一张叠起的纸"
     Column(
         Modifier
             .fillMaxWidth()
             .statusBarHeight()
             .background(
-                Brush.verticalGradient(listOf(Color(0xFF2A3199), Color(0xFF4C63E6)))
+                Brush.verticalGradient(
+                    0f to Color(0xFF232A8F),
+                    0.62f to Color(0xFF4157D6),
+                    1f to Color(0xFF6E85F2),
+                )
             )
-            .padding(start = 26.dp, end = 26.dp, top = 22.dp, bottom = 34.dp),
-        verticalArrangement = Arrangement.spacedBy(6.dp),
+            .padding(horizontal = 26.dp),
+        verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
-        // 品牌行:一枚圆角方形 R 徽标 + 细体登记名(轻声,不抢戏)
         Row(verticalAlignment = Alignment.CenterVertically) {
             Box(
-                Modifier.size(24.dp).clip(RoundedCornerShape(8.dp))
-                    .background(Color(0x33FFFFFF)),
+                Modifier.size(26.dp).clip(RoundedCornerShape(9.dp))
+                    .background(Color(0x2EFFFFFF)),
                 contentAlignment = Alignment.Center,
             ) {
-                Text("R", color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                Text("R", color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.Bold)
             }
-            Spacer(Modifier.size(9.dp))
+            Spacer(Modifier.size(10.dp))
             Text(
-                "Roam",
-                color = Color(0x99FFFFFF),
-                fontWeight = FontWeight.Normal,
-                fontSize = 13.sp,
-                letterSpacing = 3.sp,
+                "Roam · 你的旅行档案",
+                color = Color(0x8CFFFFFF), fontSize = 13.sp, letterSpacing = 1.sp,
             )
         }
-        Spacer(Modifier.height(14.dp))
-        // 主句:细字引导 + 数字重音(数字才是主角,句子是配角)
+        Spacer(Modifier.height(18.dp))
+        Text(
+            if (ui.trips.isEmpty()) "回忆还在整理" else "走过了",
+            fontSize = 22.sp, fontWeight = FontWeight.Normal, color = Color(0xB8FFFFFF),
+        )
         Row(verticalAlignment = Alignment.Bottom) {
-            Text(
-                if (ui.trips.isEmpty()) "回忆还在整理" else "走过了",
-                fontSize = 20.sp, fontWeight = FontWeight.Normal,
-                color = Color(0xB3FFFFFF),
-            )
             if (ui.trips.isNotEmpty()) {
-                Spacer(Modifier.size(6.dp))
                 Text(
-                    "${ui.trips.size}", fontSize = 34.sp, fontWeight = FontWeight.Bold,
+                    "${ui.trips.size}", fontSize = 44.sp, fontWeight = FontWeight.Bold,
                     color = Color.White,
                 )
-                Spacer(Modifier.size(6.dp))
+                Spacer(Modifier.size(8.dp))
                 Text(
-                    "段旅程", fontSize = 20.sp, fontWeight = FontWeight.Normal,
-                    color = Color(0xB3FFFFFF),
+                    "段旅程", fontSize = 22.sp, color = Color(0xB8FFFFFF),
+                    modifier = Modifier.padding(bottom = 8.dp),
                 )
             }
         }
-        Spacer(Modifier.height(2.dp))
-        // 统计:一行细字,不再胶囊堆叠
         Text(
             "${ui.validCount} 张照片 · ${ui.gpsCount} 张带位置" + if (ui.homeKnown) " · 常住地已识别" else "",
-            color = Color(0x80FFFFFF), fontSize = 13.sp,
+            color = Color(0x73FFFFFF), fontSize = 12.sp,
         )
-    }
-}
-
-@Composable
-private fun HeroChip(text: String) {
-    Box(
-        Modifier.clip(RoundedCornerShape(999.dp))
-            .background(Color(0x26FFFFFF)).padding(horizontal = 12.dp, vertical = 5.dp)
-    ) {
-        Text(text, color = Color(0xE6FFFFFF), fontSize = 12.sp, fontWeight = FontWeight.Medium)
+        Spacer(Modifier.height(26.dp))
     }
 }
 
