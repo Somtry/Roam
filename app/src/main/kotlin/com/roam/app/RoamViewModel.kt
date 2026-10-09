@@ -40,7 +40,12 @@ data class HomeUi(
         val photoIds: List<Long>,          // 详情页照片墙(按时间序)
     )
 
-    data class PossibleCard(val title: String, val subtitle: String)
+    data class PossibleCard(
+        val title: String,
+        val subtitle: String,
+        val reason: String,
+        val photoIds: List<Long>,   // 头部堆叠缩略(最多3)
+    )
 }
 
 fun photoUri(id: Long): Uri =
@@ -77,10 +82,13 @@ private fun DetectResult.toHomeUi(
 
     val possibles = candidates.filter { it.type == TripCandidate.Type.POSSIBLE }
         .sortedByDescending { it.startDate }
-        .map {
+        .map { c ->
+            val ids = c.days.flatMap { d -> d.photos.map { it.id } }
             HomeUi.PossibleCard(
-                title = "${it.startDate.year}年${it.startDate.monthValue}月${it.startDate.dayOfMonth}日",
-                subtitle = "${it.shots} 张 · ${it.reason}",
+                title = "${c.startDate.year}年${c.startDate.monthValue}月${c.startDate.dayOfMonth}日",
+                subtitle = "${c.shots} 张照片",
+                reason = c.reason,
+                photoIds = ids.take(3),
             )
         }
 

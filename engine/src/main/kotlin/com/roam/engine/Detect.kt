@@ -177,11 +177,14 @@ object Detect {
                 continue
             }
 
-            // 异地日起点:扩展连续段(桥日容忍)
+            // 异地日起点:扩展连续段。两日历日差 > suspectDayGap+1 视为断程,
+            // 防止相隔数月/年的活跃日被"桥日"连进同一次旅行
             var j = i
             var bridge = 0
             while (j + 1 < n) {
                 val nxt = cls[j + 1]
+                val gap = nxt.stat.day.toEpochDay() - cls[j].stat.day.toEpochDay()
+                if (gap > cfg.suspectDayGap + 1) break
                 if (nxt.away == true) { j++; bridge = 0 } else if (bridge < cfg.suspectDayGap) {
                     j++; bridge++
                 } else break
