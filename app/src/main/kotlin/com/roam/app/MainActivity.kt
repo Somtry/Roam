@@ -269,71 +269,9 @@ private fun TripsPage(ui: HomeUi, onOpenTrip: (HomeUi.TripCard) -> Unit) {
             Box(tripEnterModifier(i)) { TripCardRow(tripList[i], onOpenTrip) }
         }
         if (ui.possibles.isNotEmpty()) {
-            item {
-                Text(
-                    "可能是旅行",
-                    Modifier.padding(top = 8.dp),
-                    fontSize = 13.sp, fontWeight = FontWeight.Medium,
-                    color = Color(0xFF9AA0BC), letterSpacing = 1.sp,
-                )
-            }
+            item { MaybeHeader(count = ui.possibles.size) }
             items(ui.possibles, key = { "p" + it.title }) { p ->
                 MaybeCardRow(p)
-            }
-        }
-    }
-}
-
-/** 「可能是旅行」卡:与 TripCardRow 同构件的海报弱化版——矮头图、整卡 92% 透明度、待确认角标 */
-@Composable
-private fun MaybeCardRow(p: HomeUi.PossibleCard) {
-    Card(
-        Modifier.fillMaxWidth().padding(horizontal = 20.dp).clickable { },
-        shape = RoundedCornerShape(24.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xB8FFFFFF)),
-    ) {
-        Box {
-            if (p.photoIds.isNotEmpty()) {
-                AsyncImage(
-                    model = ImageRequest.Builder(androidx.compose.ui.platform.LocalContext.current)
-                        .data(photoUri(p.photoIds.first()))
-                        .crossfade(true).size(540).build(),
-                    contentDescription = null,
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier.fillMaxWidth().height(120.dp),
-                )
-                // 与正式卡同款遮罩(略轻)
-                Box(Modifier.matchParentSize().background(
-                    Brush.verticalGradient(
-                        0f to Color(0x00121B44), 0.5f to Color(0x80121B44), 1f to Color(0xB3121B44)
-                    )
-                ))
-                Column(Modifier.align(Alignment.BottomStart).padding(18.dp)) {
-                    Text(p.title, fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Color.White)
-                    Text(p.subtitle, style = MaterialTheme.typography.bodySmall, color = Color(0xFFD9DEFF))
-                }
-                // 待确认角标(右下,细描边胶囊)
-                Box(
-                    Modifier.align(Alignment.TopEnd).padding(12.dp)
-                        .clip(RoundedCornerShape(999.dp))
-                        .background(Color(0x38121B44))
-                        .border(1.dp, Color(0x59FFFFFF), RoundedCornerShape(999.dp))
-                        .padding(horizontal = 10.dp, vertical = 4.dp)
-                ) {
-                    Text("待确认", fontSize = 10.sp, color = Color(0xE6FFFFFF))
-                }
-            } else {
-                Row(Modifier.padding(18.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Text(p.title, fontSize = 17.sp, fontWeight = FontWeight.Medium,
-                        color = MaterialTheme.colorScheme.onSurface,
-                        modifier = Modifier.weight(1f))
-                    Text("待确认", fontSize = 11.sp,
-                        color = Color(0xFF9AA0BC),
-                        modifier = Modifier.clip(RoundedCornerShape(999.dp))
-                            .background(Color(0x149AA0BC))
-                            .padding(horizontal = 10.dp, vertical = 4.dp))
-                }
             }
         }
     }
@@ -343,13 +281,11 @@ private fun MaybeCardRow(p: HomeUi.PossibleCard) {
 @Composable
 private fun TripHeader(ui: HomeUi) {
     Column(Modifier.fillMaxWidth()) {
-        // 状态栏留白融进浅天幕
         Spacer(Modifier.statusBarHeight())
         Row(
             Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            // 自绘 Logo(矢量:环+旅线+琥珀定位点)
             RoamLogo(Modifier.size(34.dp), line = Palette.Dusk)
             Spacer(Modifier.size(10.dp))
             Text(
@@ -358,10 +294,9 @@ private fun TripHeader(ui: HomeUi) {
                 color = Palette.Ink, letterSpacing = 2.sp,
             )
             Spacer(Modifier.weight(1f))
-            // 统计铭牌:小巧的数字对(非句子)
             StatBadge("${ui.trips.size}", "旅程")
             Spacer(Modifier.size(8.dp))
-            StatBadge(ui.gpsCount.let { if (it > 999) "${it / 1000.0}k" else "$it" }, "定位")
+            StatBadge(ui.gpsCount.let { if (it > 999) "${it / 1000}k" else "$it" }, "定位")
         }
         Text(
             if (ui.trips.isEmpty()) "还没有发现旅行"
@@ -382,6 +317,90 @@ private fun StatBadge(num: String, label: String) {
     }
 }
 
+/** 「可能是旅行」分组头:细线 + 悬浮计数胶囊,对齐卡片边距(20dp) */
+@Composable
+private fun MaybeHeader(count: Int) {
+    Row(
+        Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Box(Modifier.weight(1f).height(1.dp).background(Color(0x148A94C8)))
+        Row(
+            Modifier.padding(horizontal = 14.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Box(
+                Modifier.size(6.dp).clip(CircleShape).background(Color(0x669AA0BC))
+            )
+            Spacer(Modifier.size(8.dp))
+            Text(
+                "可能是旅行",
+                fontSize = 12.sp, fontWeight = FontWeight.Medium,
+                color = Color(0xFF9AA0BC), letterSpacing = 2.sp,
+            )
+            Spacer(Modifier.size(10.dp))
+            Box(
+                Modifier.clip(RoundedCornerShape(999.dp))
+                    .background(Color(0x129AA0BC))
+                    .padding(horizontal = 8.dp, vertical = 2.dp)
+            ) {
+                Text(
+                    "$count", fontSize = 11.sp, fontWeight = FontWeight.Bold,
+                    color = Color(0xFF7A82B8),
+                )
+            }
+        }
+        Box(Modifier.weight(1f).height(1.dp).background(Color(0x148A94C8)))
+    }
+}
+
+/** 「可能是旅行」卡:与 TripCardRow 同构件的海报弱化版——图文分区,文字不压图 */
+@Composable
+private fun MaybeCardRow(p: HomeUi.PossibleCard) {
+    Card(
+        Modifier.fillMaxWidth().padding(horizontal = 20.dp),
+        shape = RoundedCornerShape(22.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+    ) {
+        Column {
+            // 照片区:纯图,无遮罩无压字(任何背景照片都成立)
+            if (p.photoIds.isNotEmpty()) {
+                AsyncImage(
+                    model = ImageRequest.Builder(androidx.compose.ui.platform.LocalContext.current)
+                        .data(photoUri(p.photoIds.first()))
+                        .crossfade(true).size(540).build(),
+                    contentDescription = null,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxWidth().height(110.dp),
+                )
+            }
+            // 信息条:白底;不放日期(用户裁定:多图场景日期无意义)。
+            // 左:张数细字;右:待确认徽标
+            Row(
+                Modifier.fillMaxWidth().padding(horizontal = 18.dp, vertical = 13.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    p.subtitle,
+                    Modifier.weight(1f),
+                    fontSize = 13.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Box(
+                    Modifier.clip(RoundedCornerShape(999.dp))
+                        .background(Color(0xFFEEF2FF))
+                        .padding(horizontal = 12.dp, vertical = 5.dp)
+                ) {
+                    Text(
+                        "待确认", fontSize = 11.sp,
+                        color = Palette.Dusk, fontWeight = FontWeight.Medium,
+                    )
+                }
+            }
+        }
+    }
+}
 
 @Composable
 private fun TripCardRow(t: HomeUi.TripCard, onOpen: (HomeUi.TripCard) -> Unit) {
