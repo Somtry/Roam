@@ -28,6 +28,7 @@ import androidx.compose.ui.graphics.layer.GraphicsLayer
 import androidx.compose.ui.graphics.layer.drawLayer
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
+import dev.chrisbanes.haze.HazeStyle
 import kotlin.random.Random
 
 /**
@@ -90,6 +91,7 @@ fun RoamLogo(
 @Composable
 fun FrostedBar(
     modifier: Modifier = Modifier,
+    hazeStyle: HazeStyle? = null,
     content: @Composable () -> Unit,
 ) {
     val shape = RoundedCornerShape(26.dp)
@@ -99,29 +101,20 @@ fun FrostedBar(
         modifier
             .shadow(12.dp, shape, ambientColor = Color(0x148A8FB8), spotColor = Color(0x24808CC0))
             .clip(shape)
-            .background(Color(0xB0F7FAFF).copy(alpha = 0.72f)) // 石英底
             .drawBehind {
-                // 磨砂噪点(玻璃颗粒)
+                // 磨砂噪点(玻璃颗粒,haze 模糊之上的质感层)
                 drawIntoCanvas { c ->
                     c.drawRect(
                         androidx.compose.ui.geometry.Rect(0f, 0f, size.width, size.height),
                         noise,
                     )
                 }
-                // 顶部受光:一条柔和的超浅蓝白弧
+                // 顶部受光弧
                 drawOval(
-                    color = Color(0x24FFFFFF),
+                    color = Color(0x1FFFFFFF),
                     topLeft = Offset(-size.width * 0.15f, -size.height * 1.35f),
                     size = androidx.compose.ui.geometry.Size(
                         size.width * 1.3f, size.height * 1.8f),
-                )
-                // 底部冷光(玻璃厚度折射)
-                drawRect(
-                    brush = Brush.verticalGradient(
-                        0.65f to Color(0x00E4F0FF),
-                        1f to Color(0x40E4F0FF),
-                    ),
-                    size = size,
                 )
             }
     ) {

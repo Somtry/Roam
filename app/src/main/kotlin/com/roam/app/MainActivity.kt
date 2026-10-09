@@ -77,6 +77,12 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.ViewModelProvider
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
+import dev.chrisbanes.haze.HazeStyle
+import dev.chrisbanes.haze.HazeTint
+import dev.chrisbanes.haze.hazeEffect
+import dev.chrisbanes.haze.hazeSource
+import dev.chrisbanes.haze.rememberHazeState
+import androidx.compose.ui.graphics.BlendMode
 
 // ─────────────────────────── 主题 ───────────────────────────
 
@@ -150,10 +156,12 @@ private fun RoamApp(
 ) {
     var tab by remember { mutableIntStateOf(0) }
     var detail by remember { mutableStateOf<HomeUi.TripCard?>(null) }
+    val haze = rememberHazeState()
 
     Box(Modifier.fillMaxSize().background(RoamVisuals.pageBg())) {
-        // 内容区(滚动到底部栏背后,留出高度)
-        Box(Modifier.fillMaxSize().padding(bottom = 74.dp)) {
+        // 内容区 — haze 源:内容滚到底栏身后(不在布局上预留底,毛玻璃才有内容可糊;
+        // 列表自身用 contentPadding 留出滚动末尾净空)
+        Box(Modifier.fillMaxSize().hazeSource(haze)) {
             androidx.compose.animation.AnimatedContent(
                 targetState = tab,
                 transitionSpec = {
@@ -170,9 +178,18 @@ private fun RoamApp(
             }
         }
 
-        // 底部导航:悬浮毛玻璃胶囊(不铺满,左右 26dp 边距)
+        // 底部导航:悬浮毛玻璃胶囊(真模糊:内容层经 Haze 高斯后透入)
         Box(Modifier.align(Alignment.BottomCenter).navigationBarsPadding().padding(bottom = 14.dp)) {
-            FrostedBar(Modifier.padding(horizontal = 26.dp)) {
+            FrostedBar(
+                Modifier
+                    .padding(horizontal = 26.dp)
+                    .hazeEffect(haze),
+                hazeStyle = HazeStyle(
+                    blurRadius = 30.dp,
+                    backgroundColor = Color(0xFFF7FAFF),
+                    tints = listOf(HazeTint(Color(0xCCF4F8FF), BlendMode.SrcOver)),
+                ),
+            ) {
                 Row(
                     Modifier.padding(vertical = 9.dp),
                     verticalAlignment = Alignment.CenterVertically,
@@ -241,7 +258,7 @@ private fun BottomItem(
 private fun TripsPage(ui: HomeUi, onOpenTrip: (HomeUi.TripCard) -> Unit) {
     LazyColumn(
         Modifier.fillMaxSize(),
-        contentPadding = androidx.compose.foundation.layout.PaddingValues(bottom = 24.dp),
+        contentPadding = androidx.compose.foundation.layout.PaddingValues(bottom = 130.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
         item { TripHeader(ui) }

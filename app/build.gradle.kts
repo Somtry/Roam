@@ -57,6 +57,9 @@ dependencies {
     // 图片加载(MediaStore 缩略图)
     implementation("io.coil-kt:coil-compose:2.7.0")
 
+    // 生态毛玻璃(真·模糊身后内容;Android 12+ 全效果,以下退化)
+    implementation("dev.chrisbanes.haze:haze:1.6.9")
+
     testImplementation(libs.junit)
 }
 
