@@ -3,6 +3,8 @@
 
     <!-- 引擎只读相册元数据;只读、不上传、原图不复制 -->
     <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
+    <!-- 媒体位置元数据:Android 13+ 不加此权限,系统会从流里剥离 GPS(运行时需用户二次授予) -->
+    <uses-permission android:name="android.permission.ACCESS_MEDIA_LOCATION" />
     <!-- Android 12 及以下 -->
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"
         android:maxSdkVersion="32" />

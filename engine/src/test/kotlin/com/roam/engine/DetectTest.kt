@@ -65,7 +65,7 @@ class DetectTest {
         assertEquals(1, r.tripCount)
     }
 
-    /** knownHome: 距常住地 5km 的本地跨天活动 → 不判 TRIP */
+    /** knownHome: 距常住地 5km 的本地跨天活动 → 不判 TRIP,也不进折叠(日常不刷屏) */
     @Test
     fun localActivity_nearHome_isNotTrip() {
         val photos = listOf(
@@ -75,7 +75,7 @@ class DetectTest {
         )
         val r = Detect.detect(photos, EngineConfig(homeLatLon = 30.27 to 120.15))
         assertEquals(0, r.tripCount)
-        assertTrue(r.possibles.isNotEmpty())
+        assertEquals(0, r.possibles.size)
     }
 
     /** knownHome: 距常住地 800km → TRIP */

@@ -19,6 +19,7 @@ data class HomeUi(
     val gpsCount: Int = 0,
     val trips: List<TripCard> = emptyList(),
     val possibles: List<PossibleCard> = emptyList(),
+    val homeKnown: Boolean = false,
 ) {
     enum class State { IDLE, SCANNING, DONE }
 
@@ -42,14 +43,16 @@ class RoamViewModel(app: Application) : AndroidViewModel(app) {
         _ui.value = _ui.value.copy(state = HomeUi.State.SCANNING)
         viewModelScope.launch {
             val (photos, stats) = MediaScanner.scan(getApplication())
-            val result: DetectResult =
-                com.roam.engine.Detect.detect(photos, EngineConfig())
-            _ui.value = result.toHomeUi(stats)
+            // 常住地:数据自动推断(照片年复一年最密的落脚点);失败则引擎仅按时间聚类
+            val home = Detect.inferHome(photos)
+            val cfg = home?.let { EngineConfig(homeLatLon = it) } ?: EngineConfig()
+            val result: DetectResult = Detect.detect(photos, cfg)
+            _ui.value = result.toHomeUi(stats, home)
         }
     }
 }
 
-private fun DetectResult.toHomeUi(stats: MediaScanner.ScanStats): HomeUi {
+private fun DetectResult.toHomeUi(stats: MediaScanner.ScanStats, home: Pair<Double, Double>?): HomeUi {
     // Trip 候选 → 首页卡片(高置信正面)
     val trips = candidates.filter { it.type == TripCandidate.Type.TRIP }.map { c ->
         HomeUi.TripCard(
@@ -74,5 +77,6 @@ private fun DetectResult.toHomeUi(stats: MediaScanner.ScanStats): HomeUi {
         gpsCount = stats.withGps,
         trips = trips,
         possibles = possibles,
+        homeKnown = home != null,
     )
 }

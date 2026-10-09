@@ -2,6 +2,7 @@ package com.roam.app
 
 import android.Manifest
 import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -43,9 +44,16 @@ class MainActivity : ComponentActivity() {
     private val vm by lazy { ViewModelProvider(this)[RoamViewModel::class.java] }
 
     private val permLauncher =
-        registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
-            if (granted) vm.runScan()
+        registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { grants ->
+            // 相册或位置任一被拒,都仍尝试扫描(位置缺了退化时间聚类;相册缺了无数据)
+            if (grants[Manifest.permission.READ_MEDIA_IMAGES] == true) vm.runScan()
         }
+
+    private fun mediaPerms(): Array<String> = buildList {
+        add(Manifest.permission.READ_MEDIA_IMAGES)
+        // ACCESS_MEDIA_LOCATION:Android 13+ 与媒体权限捆绑授予(弹窗即合并在相册弹窗内)
+        add(Manifest.permission.ACCESS_MEDIA_LOCATION)
+    }.toTypedArray()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -70,7 +78,7 @@ class MainActivity : ComponentActivity() {
                         onRequestPermission = {
                             if (checkMediaPermission()) {
                                 hasPermission = true; vm.runScan()
-                            } else permLauncher.launch(Manifest.permission.READ_MEDIA_IMAGES)
+                            } else permLauncher.launch(mediaPerms())
                         },
                     )
                 }
@@ -142,7 +150,7 @@ private fun Result(ui: HomeUi, modifier: Modifier = Modifier) {
                 fontWeight = FontWeight.Bold,
             )
             Text(
-                "${ui.validCount} 张正片 · 带 GPS ${ui.gpsCount} 张 · 待确认 ${ui.possibles.size} 个",
+                "${ui.validCount} 张正片 · 带 GPS ${ui.gpsCount} 张 · 待确认 ${ui.possibles.size} 个" + if (ui.homeKnown) " · 已识别常住地" else " · 常住地未识别",
                 style = MaterialTheme.typography.bodySmall,
             )
         }
