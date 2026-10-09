@@ -122,14 +122,14 @@ object Detect {
                     out += TripCandidate(
                         type = TripCandidate.Type.TRIP, days = seg, spanDays = nDays,
                         shots = shots, confidence = conf,
-                        reason = if (awayKm != null) "距常住地 ${awayKm.toInt()} km" else "跨天活动·常住地未知",
+                        reason = if (awayKm != null) "距常住地 ${awayKm.toInt()} 公里" else "跨天活动·常住地未设置",
                         centroidLat = cLat, centroidLon = cLon, awayFromHomeKm = awayKm,
                     )
                 } else {
-                    out += foldout(seg, shots, "跨天但距常住地仅 ${awayKm?.toInt() ?: "-"} km(疑似本地)")
+                    out += foldout(seg, shots, "跨天但距常住地太近,疑似本地生活")
                 }
             } else {
-                out += foldout(seg, shots, "单日活动·无跨天证据")
+                out += foldout(seg, shots, "单日活动,缺少跨天证据")
             }
             i = j + 1
         }
@@ -156,8 +156,9 @@ data class DetectResult(
     val valid: List<PhotoMeta>,
     val droppedCount: Int,
     val dayStats: List<DayStat>,
-    val trips: List<TripCandidate>,
+    val candidates: List<TripCandidate>,
 ) {
-    val tripCount: Int get() = trips.count { it.type == TripCandidate.Type.TRIP }
-    val possibles: List<TripCandidate> get() = trips.filter { it.type == TripCandidate.Type.POSSIBLE }
+    val trips: List<TripCandidate> get() = candidates.filter { it.type == TripCandidate.Type.TRIP }
+    val tripCount: Int get() = trips.size
+    val possibles: List<TripCandidate> get() = candidates.filter { it.type == TripCandidate.Type.POSSIBLE }
 }
