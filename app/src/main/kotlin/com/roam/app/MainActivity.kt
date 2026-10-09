@@ -359,12 +359,13 @@ private fun MaybeHeader(count: Int) {
 private fun MaybeCardRow(p: HomeUi.PossibleCard) {
     Card(
         Modifier.fillMaxWidth().padding(horizontal = 20.dp),
-        shape = RoundedCornerShape(22.dp),
+        shape = RoundedCornerShape(24.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
     ) {
-        Column {
-            // 照片区:纯图,无遮罩无压字(任何背景照片都成立)
+        // 海报式(与正式卡同构):Box 叠层——照片 + 底部渐变遮罩 + 右上待确认胶囊。
+        // 不压任何信息字(日期/张数省,用户裁决:候选阶段让照片自己说话)
+        Box(Modifier.fillMaxWidth().height(130.dp)) {
             if (p.photoIds.isNotEmpty()) {
                 AsyncImage(
                     model = ImageRequest.Builder(androidx.compose.ui.platform.LocalContext.current)
@@ -372,31 +373,25 @@ private fun MaybeCardRow(p: HomeUi.PossibleCard) {
                         .crossfade(true).size(540).build(),
                     contentDescription = null,
                     contentScale = ContentScale.Crop,
-                    modifier = Modifier.fillMaxWidth().height(110.dp),
+                    modifier = Modifier.fillMaxSize(),
                 )
+            } else {
+                Box(Modifier.fillMaxSize().background(
+                    Brush.linearGradient(listOf(Palette.Dawn, Palette.Dusk))
+                ))
             }
-            // 信息条:白底;不放日期(用户裁定:多图场景日期无意义)。
-            // 左:张数细字;右:待确认徽标
-            Row(
-                Modifier.fillMaxWidth().padding(horizontal = 18.dp, vertical = 13.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Text(
-                    p.subtitle,
-                    Modifier.weight(1f),
-                    fontSize = 13.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+            Box(Modifier.matchParentSize().background(
+                Brush.verticalGradient(
+                    0f to Color(0x00101830), 0.5f to Color(0x30121840), 1f to Color(0x6B121B44)
                 )
-                Box(
-                    Modifier.clip(RoundedCornerShape(999.dp))
-                        .background(Color(0xFFEEF2FF))
-                        .padding(horizontal = 12.dp, vertical = 5.dp)
-                ) {
-                    Text(
-                        "待确认", fontSize = 11.sp,
-                        color = Palette.Dusk, fontWeight = FontWeight.Medium,
-                    )
-                }
+            ))
+            Box(
+                Modifier.align(Alignment.TopEnd).padding(12.dp)
+                    .clip(RoundedCornerShape(999.dp))
+                    .background(Color(0x3D121B44))
+                    .padding(horizontal = 11.dp, vertical = 5.dp)
+            ) {
+                Text("待确认", fontSize = 11.sp, color = Color(0xF2FFFFFF), fontWeight = FontWeight.Medium)
             }
         }
     }
