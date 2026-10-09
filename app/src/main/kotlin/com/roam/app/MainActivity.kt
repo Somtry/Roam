@@ -142,7 +142,7 @@ private fun Result(ui: HomeUi, modifier: Modifier = Modifier) {
                 fontWeight = FontWeight.Bold,
             )
             Text(
-                "${ui.validCount} 张正片 · ${ui.possibles.size} 个待确认",
+                "${ui.validCount} 张正片 · 带 GPS ${ui.gpsCount} 张 · 待确认 ${ui.possibles.size} 个",
                 style = MaterialTheme.typography.bodySmall,
             )
         }

@@ -12,10 +12,10 @@ data class PhotoMeta(
     val height: Int = 0,
     val maker: String? = null,
     val model: String? = null,
-) {
-    /** 正片判定:有相机字段 + 尺寸达标(过滤截图/表情包/缓存图) */
-    val isOriginal: Boolean
+    ) {
+        /** 正片判定:有相机字段 + 尺寸达标(过滤截图/表情包/缓存图) */
+        val isOriginal: Boolean
         get() = !maker.isNullOrBlank() && width >= MIN_WIDTH
 
-    companion object { const val MIN_WIDTH = 1000 }
+        companion object { const val MIN_WIDTH = 1000 }
 }

@@ -51,5 +51,13 @@ dependencies {
     implementation(libs.androidx.core.ktx)
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.2")
 
+    // EXIF 直读(GPS/拍摄时间;不依赖系统相册是否解析)
+    implementation("androidx.exifinterface:exifinterface:1.4.1")
+
     testImplementation(libs.junit)
+}
+
+tasks.withType<Test> {
+    // 本机可用 -Proam.photos=/abs/path 喂真实照片;默认相对路径(CI 无照片则跳过)
+    systemProperty("roam.photos", project.findProperty("roam.photos") ?: "data/沉水")
 }
