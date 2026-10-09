@@ -269,102 +269,70 @@ private fun TripsPage(ui: HomeUi, onOpenTrip: (HomeUi.TripCard) -> Unit) {
             Box(tripEnterModifier(i)) { TripCardRow(tripList[i], onOpenTrip) }
         }
         if (ui.possibles.isNotEmpty()) {
-            item { MaybeTripsSection(ui.possibles) }
+            item {
+                Text(
+                    "可能是旅行",
+                    Modifier.padding(top = 8.dp),
+                    fontSize = 13.sp, fontWeight = FontWeight.Medium,
+                    color = Color(0xFF9AA0BC), letterSpacing = 1.sp,
+                )
+            }
+            items(ui.possibles, key = { "p" + it.title }) { p ->
+                MaybeCardRow(p)
+            }
         }
     }
 }
 
-/** 「可能是旅行」收拢区:默认一枚胶囊开关,点开 AnimatedVisibility 展开 */
+/** 「可能是旅行」卡:与 TripCardRow 同构件的海报弱化版——矮头图、整卡 92% 透明度、待确认角标 */
 @Composable
-private fun MaybeTripsSection(possibles: List<HomeUi.PossibleCard>) {
-    var open by remember { mutableStateOf(false) }
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        // 胶囊开关:三张照片叠牌 + 文案 + 展开箭头
-        Surface(
-            Modifier.fillMaxWidth().clickable { open = !open },
-            shape = RoundedCornerShape(18.dp),
-            color = Color(0x66FFFFFF),
-            border = androidx.compose.foundation.BorderStroke(1.dp, Color(0x14000000).copy(alpha = 0.10f)),
-        ) {
-            Row(
-                Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                // 照片叠牌(最多3张,扇形叠)
-                Box(Modifier.size(width = 64.dp, height = 40.dp)) {
-                    possibles.firstOrNull()?.photoIds?.take(3)?.reversed()?.forEachIndexed { i, id ->
-                        Box(
-                            Modifier
-                                .align(Alignment.CenterStart)
-                                .padding(start = (i * 14).dp)
-                                .size(34.dp)
-                                .clip(RoundedCornerShape(8.dp))
-                                .border(1.5.dp, Color.White, RoundedCornerShape(8.dp))
-                        ) {
-                            AsyncImage(
-                                model = ImageRequest.Builder(androidx.compose.ui.platform.LocalContext.current)
-                                    .data(photoUri(id)).crossfade(true).size(160).build(),
-                                contentDescription = null,
-                                contentScale = ContentScale.Crop,
-                                modifier = Modifier.fillMaxSize(),
-                            )
-                        }
-                    }
-                }
-                Spacer(Modifier.size(12.dp))
-                Column(Modifier.weight(1f)) {
-                    Text(
-                        "可能是旅行 · ${possibles.size} 个",
-                        fontSize = 14.sp, fontWeight = FontWeight.Medium,
-                        color = MaterialTheme.colorScheme.onSurface,
-                    )
-                    Text(
-                        "照片里有它们,但还不确定算不算旅行",
-                        fontSize = 11.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-                // 展开指示(箭头随开合旋转)
-                val rot by animateFloatAsState(if (open) 180f else 0f, tween(260), label = "rot")
-                Text(
-                    "⌄", fontSize = 16.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.graphicsLayer { rotationZ = rot },
+private fun MaybeCardRow(p: HomeUi.PossibleCard) {
+    Card(
+        Modifier.fillMaxWidth().padding(horizontal = 20.dp).clickable { },
+        shape = RoundedCornerShape(24.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+        colors = CardDefaults.cardColors(containerColor = Color(0xB8FFFFFF)),
+    ) {
+        Box {
+            if (p.photoIds.isNotEmpty()) {
+                AsyncImage(
+                    model = ImageRequest.Builder(androidx.compose.ui.platform.LocalContext.current)
+                        .data(photoUri(p.photoIds.first()))
+                        .crossfade(true).size(540).build(),
+                    contentDescription = null,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxWidth().height(120.dp),
                 )
-            }
-        }
-        // 展开体:横向滑动条(不占竖向长幅;每枚是缩略块而非一行字)
-        androidx.compose.animation.AnimatedVisibility(
-            visible = open,
-            enter = fadeIn(tween(240)) + slideInVertically(spring(stiffness = 300f)) { it / 3 },
-            exit = fadeOut(tween(160)),
-        ) {
-            LazyRow(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                items(possibles, key = { "p" + it.title }) { p ->
-                    Surface(
-                        Modifier.width(150.dp),
-                        shape = RoundedCornerShape(16.dp),
-                        color = Color.White,
-                        shadowElevation = 1.dp,
-                    ) {
-                        Column {
-                            if (p.photoIds.isNotEmpty()) {
-                                AsyncImage(
-                                    model = ImageRequest.Builder(androidx.compose.ui.platform.LocalContext.current)
-                                        .data(photoUri(p.photoIds.first()))
-                                        .crossfade(true).size(320).build(),
-                                    contentDescription = null,
-                                    contentScale = ContentScale.Crop,
-                                    modifier = Modifier.fillMaxWidth().height(84.dp),
-                                )
-                            }
-                            Column(Modifier.padding(10.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                                Text(p.title, fontSize = 13.sp, fontWeight = FontWeight.Medium)
-                                Text(p.subtitle, fontSize = 11.sp,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant)
-                            }
-                        }
-                    }
+                // 与正式卡同款遮罩(略轻)
+                Box(Modifier.matchParentSize().background(
+                    Brush.verticalGradient(
+                        0f to Color(0x00121B44), 0.5f to Color(0x80121B44), 1f to Color(0xB3121B44)
+                    )
+                ))
+                Column(Modifier.align(Alignment.BottomStart).padding(18.dp)) {
+                    Text(p.title, fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                    Text(p.subtitle, style = MaterialTheme.typography.bodySmall, color = Color(0xFFD9DEFF))
+                }
+                // 待确认角标(右下,细描边胶囊)
+                Box(
+                    Modifier.align(Alignment.TopEnd).padding(12.dp)
+                        .clip(RoundedCornerShape(999.dp))
+                        .background(Color(0x38121B44))
+                        .border(1.dp, Color(0x59FFFFFF), RoundedCornerShape(999.dp))
+                        .padding(horizontal = 10.dp, vertical = 4.dp)
+                ) {
+                    Text("待确认", fontSize = 10.sp, color = Color(0xE6FFFFFF))
+                }
+            } else {
+                Row(Modifier.padding(18.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Text(p.title, fontSize = 17.sp, fontWeight = FontWeight.Medium,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier.weight(1f))
+                    Text("待确认", fontSize = 11.sp,
+                        color = Color(0xFF9AA0BC),
+                        modifier = Modifier.clip(RoundedCornerShape(999.dp))
+                            .background(Color(0x149AA0BC))
+                            .padding(horizontal = 10.dp, vertical = 4.dp))
                 }
             }
         }
